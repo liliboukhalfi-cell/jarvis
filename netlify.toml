@@ -1,7 +1,2 @@
 [build]
-  publish = "."
-
-[[redirects]]
-  from = "/"
-  to = "/ProActive Wireframes.html"
-  status = 200
+  publish = "proactive"
