@@ -1826,6 +1826,14 @@ body {
 #scannerVideoBox img { display: none !important; }
 .scanner-hint { color:rgba(255,255,255,0.8); font-size:12px; font-weight:600; margin-top:16px; text-align:center; }
 .scanner-status { font-size:13px; font-weight:700; margin-top:10px; text-align:center; }
+.scanner-switch-cam {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(0,0,0,0.55); border: none; border-radius: 50%;
+  width: 36px; height: 36px; color: #fff; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: all; backdrop-filter: blur(4px); transition: background 0.2s;
+}
+.scanner-switch-cam:active { background: rgba(255,104,53,0.6); }
 .scanner-close {
   position: absolute; top: 16px; right: 16px;
   background: rgba(0,0,0,0.55); border: none; border-radius: 50%;
@@ -2678,6 +2686,8 @@ body {
       <div class="scanner-hint">Pointez vers un code-barre</div>
       <div class="scanner-status" id="scannerStatus"></div>
     </div>
+    <!-- Bouton basculer caméra -->
+    <button class="scanner-switch-cam" onclick="switchCamera()" title="Basculer caméra">🔄</button>
     <!-- Bouton fermer -->
     <button class="scanner-close" onclick="closeScanner()">×</button>
   </div>
@@ -4598,6 +4608,7 @@ let OFFCache = []; // aliments scannés (session)
 
 // ── Variables html5-qrcode ──
 let _html5Scanner = null;
+let _currentFacingMode = 'environment'; // 'environment' = arrière, 'user' = avant
 
 async function getWideAngleCameraId() {
   try {
@@ -4653,11 +4664,16 @@ async function openScanner() {
     }
     _html5Scanner = new Html5Qrcode('scannerVideoBox');
 
-    // Chercher la caméra grand angle
-    const cameraId = await getWideAngleCameraId();
-    const videoConstraints = cameraId
-      ? { deviceId: { exact: cameraId } }
-      : { facingMode: 'environment' };
+    // Chercher la caméra selon le mode
+    let videoConstraints;
+    if (_currentFacingMode === 'user') {
+      videoConstraints = { facingMode: 'user' };
+    } else {
+      const cameraId = await getWideAngleCameraId();
+      videoConstraints = cameraId
+        ? { deviceId: { exact: cameraId } }
+        : { facingMode: 'environment' };
+    }
 
     await _html5Scanner.start(
       videoConstraints,
@@ -4703,6 +4719,19 @@ function closeScanner() {
   const box = document.getElementById('scannerVideoBox');
   if (box) box.innerHTML = '';
   setScanStatus('', '');
+}
+
+async function switchCamera() {
+  _currentFacingMode = _currentFacingMode === 'environment' ? 'user' : 'environment';
+  setScanStatus('🔄 Changement…', '#fff');
+
+  // Arrêter et redémarrer le scanner avec la nouvelle caméra
+  if (_html5Scanner) {
+    try { if (_html5Scanner.isScanning) await _html5Scanner.stop(); } catch(e) {}
+    _html5Scanner = null;
+  }
+
+  await openScanner();
 }
 
 function setScanStatus(msg, color) {
