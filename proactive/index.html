@@ -4706,12 +4706,26 @@ async function openScanner() {
       if (video && video.srcObject) {
         const tracks = video.srcObject.getVideoTracks();
         for (let track of tracks) {
-          const settings = track.getSettings();
-          const constraints = { advanced: [{ zoom: 1 }] };
-          await track.applyConstraints(constraints).catch(() => {});
+          try {
+            const capabilities = track.getCapabilities();
+            if (capabilities && capabilities.zoom) {
+              const zoomRange = capabilities.zoom;
+              // Appliquer le zoom minimum (1x)
+              await track.applyConstraints({
+                advanced: [{ zoom: zoomRange.min || 1 }]
+              });
+            }
+          } catch(e) {
+            // Si advanced ne fonctionne pas, essayer sans
+            try {
+              await track.applyConstraints({ zoom: 1 });
+            } catch(e2) {}
+          }
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn('Erreur désactivation zoom:', e);
+    }
 
     setScanStatus('📷 Pointez vers un code-barre…', '#fff');
   } catch(err) {
