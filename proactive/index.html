@@ -4640,8 +4640,8 @@ async function openScanner() {
     // Chercher la caméra grand angle
     const cameraId = await getWideAngleCameraId();
     const videoConstraints = cameraId
-      ? { deviceId: { exact: cameraId } }
-      : { facingMode: 'environment' };
+      ? { deviceId: { exact: cameraId }, zoom: 1, advanced: [{ zoom: 1 }] }
+      : { facingMode: 'environment', zoom: 1, advanced: [{ zoom: 1 }] };
 
     await _html5Scanner.start(
       videoConstraints,
