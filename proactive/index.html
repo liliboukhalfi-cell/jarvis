@@ -4615,7 +4615,7 @@ async function openScanner() {
     }
     _html5Scanner = new Html5Qrcode('scannerVideoBox');
     await _html5Scanner.start(
-      { facingMode: 'environment' },
+      { facingMode: 'environment', advanced: [{ zoom: 1 }] },
       { fps: 15, qrbox: { width: 280, height: 100 }, aspectRatio: 1.0, formatsToSupport: [5, 7, 8, 13] },
       async (decodedText) => {
         setScanStatus('✓ Code détecté !', 'var(--green)');
