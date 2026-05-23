@@ -1794,7 +1794,7 @@ body {
   align-items: center; justify-content: center; pointer-events: none;
 }
 .scanner-frame {
-  width: 220px; height: 220px; position: relative;
+  width: 280px; height: 100px; position: relative;
   border: 2px solid rgba(255,255,255,0.15); border-radius: 12px;
 }
 .scanner-frame::before, .scanner-frame::after,
@@ -2675,7 +2675,7 @@ body {
         <div class="corner-bl"></div>
         <div class="scanner-line"></div>
       </div>
-      <div class="scanner-hint">Pointez vers un code-barre EAN / QR</div>
+      <div class="scanner-hint">Pointez vers un code-barre</div>
       <div class="scanner-status" id="scannerStatus"></div>
     </div>
     <!-- Bouton fermer -->
@@ -4616,7 +4616,7 @@ async function openScanner() {
     _html5Scanner = new Html5Qrcode('scannerVideoBox');
     await _html5Scanner.start(
       { facingMode: 'environment' },
-      { fps: 15, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0, formatsToSupport: [9, 10, 14, 15, 5, 3, 4] },
+      { fps: 15, qrbox: { width: 280, height: 100 }, aspectRatio: 1.0, formatsToSupport: [5, 7, 8, 13] },
       async (decodedText) => {
         setScanStatus('✓ Code détecté !', 'var(--green)');
         try { if (_html5Scanner && _html5Scanner.isScanning) await _html5Scanner.stop(); } catch(e3) {}
