@@ -4640,8 +4640,8 @@ async function openScanner() {
     // Chercher la caméra grand angle
     const cameraId = await getWideAngleCameraId();
     const videoConstraints = cameraId
-      ? { deviceId: { exact: cameraId }, zoom: 1, advanced: [{ zoom: 1 }] }
-      : { facingMode: 'environment', zoom: 1, advanced: [{ zoom: 1 }] };
+      ? { deviceId: { exact: cameraId } }
+      : { facingMode: 'environment' };
 
     await _html5Scanner.start(
       videoConstraints,
@@ -4653,6 +4653,20 @@ async function openScanner() {
         await handleBarcode(decodedText);
       }
     );
+
+    // Désactiver le zoom sur le flux vidéo
+    try {
+      const video = document.querySelector('#scannerVideoBox video');
+      if (video && video.srcObject) {
+        const tracks = video.srcObject.getVideoTracks();
+        for (let track of tracks) {
+          const settings = track.getSettings();
+          const constraints = { advanced: [{ zoom: 1 }] };
+          await track.applyConstraints(constraints).catch(() => {});
+        }
+      }
+    } catch(e) {}
+
     setScanStatus('📷 Pointez vers un code-barre…', '#fff');
   } catch(err) {
     const msg = String(err);
