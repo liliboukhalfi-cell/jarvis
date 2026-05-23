@@ -4622,8 +4622,16 @@ async function getWideAngleCameraId() {
     console.log('Caméras:', cameraLabels);
     setScanStatus('Caméras: ' + cameraLabels, '#FFD54F');
 
+    // Filtrer les caméras arrière (exclure 'front', 'user', 'selfie')
+    const backCameras = cameras.filter(cam => {
+      const label = cam.label.toLowerCase();
+      return !label.includes('front') && !label.includes('user') && !label.includes('selfie');
+    });
+
+    if (backCameras.length === 0) return null;
+
     // Priorité 1: Chercher ultra grand angle
-    for (let cam of cameras) {
+    for (let cam of backCameras) {
       const label = cam.label.toLowerCase();
       if (label.includes('ultra') || label.includes('0.5x') || label.includes('ultrawide') || label.includes('ultra-wide')) {
         return cam.deviceId;
@@ -4631,7 +4639,7 @@ async function getWideAngleCameraId() {
     }
 
     // Priorité 2: Grand angle (wide)
-    for (let cam of cameras) {
+    for (let cam of backCameras) {
       const label = cam.label.toLowerCase();
       if (label.includes('wide') && !label.includes('tele') && !label.includes('zoom')) {
         return cam.deviceId;
@@ -4639,15 +4647,15 @@ async function getWideAngleCameraId() {
     }
 
     // Priorité 3: Chercher par numéro (0.5, 1mm, etc.)
-    for (let cam of cameras) {
+    for (let cam of backCameras) {
       const label = cam.label.toLowerCase();
       if (label.includes('0.5') || label.includes('1mm') || label.includes('24mm')) {
         return cam.deviceId;
       }
     }
 
-    // Si rien trouvé, utiliser la première (généralement le grand angle sur téléphone)
-    return cameras[0].deviceId;
+    // Si rien trouvé, utiliser la première caméra arrière
+    return backCameras[0].deviceId;
   } catch(e) {
     return null;
   }
@@ -4674,10 +4682,11 @@ async function openScanner() {
     if (_currentFacingMode === 'user') {
       videoConstraints = { facingMode: 'user' };
     } else {
+      // Forcer la caméra arrière (environment) obligatoirement
       const cameraId = await getWideAngleCameraId();
       videoConstraints = cameraId
         ? { deviceId: { exact: cameraId } }
-        : { facingMode: 'environment' };
+        : { facingMode: { exact: 'environment' } }; // exact pour forcer
     }
 
     await _html5Scanner.start(
