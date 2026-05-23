@@ -4691,7 +4691,7 @@ async function openScanner() {
 
     await _html5Scanner.start(
       videoConstraints,
-      { fps: 15, qrbox: { width: 280, height: 100 }, aspectRatio: 1.0, formatsToSupport: [5, 7, 8, 13] },
+      { fps: 15, qrbox: { width: 280, height: 100 }, aspectRatio: 16/9, formatsToSupport: [5, 7, 8, 13] },
       async (decodedText) => {
         setScanStatus('✓ Code détecté !', 'var(--green)');
         try { if (_html5Scanner && _html5Scanner.isScanning) await _html5Scanner.stop(); } catch(e3) {}
