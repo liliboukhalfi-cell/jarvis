@@ -221,14 +221,11 @@ body {
    ╚══════════════════════════════════════════════════════ */
 .content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   background: transparent;
-  scrollbar-width: none;
   position: relative;
   z-index: 1;
 }
-.content::-webkit-scrollbar { display: none; }
 
 /* ── Ambient background (visible through glass) ── */
 .phone-bg {
@@ -267,20 +264,32 @@ body {
 }
 
 .screen {
-  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding: 20px 18px 16px;
-  min-height: 100%;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform, opacity;
 }
+.screen::-webkit-scrollbar { display: none; }
 .screen.active {
-  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
   animation: liquidIn 0.42s var(--ease-spring) both;
 }
 .screen.active.from-back {
   animation: liquidInBack 0.42s var(--ease-spring) both;
 }
 .screen.exiting {
-  display: block;
   pointer-events: none;
+  z-index: 1;
   animation: liquidOut 0.32s var(--ease-out) both;
 }
 .screen.exiting.to-back {
@@ -288,31 +297,23 @@ body {
 }
 
 @keyframes liquidIn {
-  0%   { opacity:0; transform: translateX(36px) scale(0.97); filter: blur(8px); }
-  55%  { filter: blur(0); }
-  100% { opacity:1; transform: translateX(0)    scale(1);    filter: blur(0); }
+  0%   { opacity:0; transform: translateX(30px) scale(0.97); }
+  100% { opacity:1; transform: none; }
 }
 @keyframes liquidInBack {
-  0%   { opacity:0; transform: translateX(-36px) scale(0.97); filter: blur(8px); }
-  55%  { filter: blur(0); }
-  100% { opacity:1; transform: translateX(0)     scale(1);    filter: blur(0); }
+  0%   { opacity:0; transform: translateX(-30px) scale(0.97); }
+  100% { opacity:1; transform: none; }
 }
 @keyframes liquidOut {
-  from { opacity:1; transform: translateX(0)     scale(1);    filter: blur(0); }
-  to   { opacity:0; transform: translateX(-24px) scale(0.97); filter: blur(6px); }
+  from { opacity:1; transform: none; }
+  to   { opacity:0; transform: translateX(-20px) scale(0.97); }
 }
 @keyframes liquidOutBack {
-  from { opacity:1; transform: translateX(0)    scale(1);    filter: blur(0); }
-  to   { opacity:0; transform: translateX(24px) scale(0.97); filter: blur(6px); }
+  from { opacity:1; transform: none; }
+  to   { opacity:0; transform: translateX(20px) scale(0.97); }
 }
 
-/* Android: no filter blur on transitions for perf */
-@media not all and (-webkit-min-device-pixel-ratio: 0) {
-  @keyframes liquidIn     { 0% { opacity:0; transform: translateX(28px) scale(0.97); } 100% { opacity:1; transform: none; } }
-  @keyframes liquidInBack { 0% { opacity:0; transform: translateX(-28px) scale(0.97); } 100% { opacity:1; transform: none; } }
-  @keyframes liquidOut    { from { opacity:1; } to { opacity:0; transform: translateX(-18px) scale(0.97); } }
-  @keyframes liquidOutBack{ from { opacity:1; } to { opacity:0; transform: translateX(18px) scale(0.97); } }
-}
+
 
 /* ╔══════════════════════════════════════════════════════
    ║  BOTTOM NAV
@@ -3894,7 +3895,7 @@ function nav(id, goBack) {
     el.classList.add('active');
     const nb = document.getElementById('nav-'+id);
     if (nb) { nb.classList.add('active'); movePill(id); }
-    document.getElementById('content').scrollTop = 0;
+    el.scrollTop = 0;
     if (id === 'search') initSearch();
     if (id === 'stats')  initStats();
   };
@@ -4875,6 +4876,63 @@ renderAll();
 liveUpdate();
 
 setTimeout(() => movePill('home'), 50);
+
+// -- Nav drag (pill suit le doigt) --
+(function() {
+  var _navEl   = document.getElementById('bottomNav');
+  var _pill    = document.getElementById('navPill');
+  var _btns    = Array.from(_navEl.querySelectorAll('.nav-btn'));
+  var _drag    = false, _startIdx = -1, _curIdx = -1;
+
+  function _nearestIdx(clientX) {
+    var nr = _navEl.getBoundingClientRect();
+    var rx = clientX - nr.left;
+    var best = 0, bestD = Infinity;
+    _btns.forEach(function(b, i) {
+      var br = b.getBoundingClientRect();
+      var cx = br.left - nr.left + br.width / 2;
+      var d  = Math.abs(rx - cx);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  }
+
+  function _snapPill(idx) {
+    var br  = _btns[idx].getBoundingClientRect();
+    var nr  = _navEl.getBoundingClientRect();
+    var lft = br.left - nr.left + (br.width - 76) / 2;
+    _pill.style.left = lft + 'px';
+  }
+
+  _navEl.addEventListener('touchstart', function(e) {
+    _drag = true;
+    _startIdx = _nearestIdx(e.touches[0].clientX);
+    _curIdx   = _startIdx;
+    _pill.style.transition = 'left 0.06s ease-out';
+  }, { passive: true });
+
+  _navEl.addEventListener('touchmove', function(e) {
+    if (!_drag) return;
+    var idx = _nearestIdx(e.touches[0].clientX);
+    if (idx !== _curIdx) {
+      _curIdx = idx;
+      _snapPill(idx);
+      _btns.forEach(function(b, i) { b.classList.toggle('active', i === idx); });
+    }
+  }, { passive: true });
+
+  _navEl.addEventListener('touchend', function(e) {
+    if (!_drag) return;
+    _drag = false;
+    _pill.style.transition = '';
+    if (_curIdx >= 0 && _curIdx !== _startIdx) {
+      e.preventDefault();
+      nav(NAV_SCREENS[_curIdx]);
+    } else {
+      movePill(NAV_SCREENS[_startIdx >= 0 ? _startIdx : 0]);
+    }
+  }, { passive: false });
+})();
 
 // â”€â”€ Navigation tactile par swipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 (function() {
