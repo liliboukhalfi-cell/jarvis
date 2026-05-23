@@ -4599,6 +4599,28 @@ let OFFCache = []; // aliments scannés (session)
 // ── Variables html5-qrcode ──
 let _html5Scanner = null;
 
+async function getWideAngleCameraId() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter(device => device.kind === 'videoinput');
+
+    if (cameras.length === 0) return null;
+
+    // Chercher la caméra grand angle (ultra-wide, 0.5x, etc.)
+    for (let cam of cameras) {
+      const label = cam.label.toLowerCase();
+      if (label.includes('ultra') || label.includes('0.5') || label.includes('wide')) {
+        return cam.deviceId;
+      }
+    }
+
+    // Si pas trouvée, utiliser la dernière (souvent le grand angle sur les téléphones)
+    return cameras.length > 1 ? cameras[cameras.length - 1].deviceId : cameras[0].deviceId;
+  } catch(e) {
+    return null;
+  }
+}
+
 async function openScanner() {
   const modal = document.getElementById('scannerModal');
   modal.classList.add('open');
@@ -4614,8 +4636,15 @@ async function openScanner() {
       _html5Scanner = null;
     }
     _html5Scanner = new Html5Qrcode('scannerVideoBox');
+
+    // Chercher la caméra grand angle
+    const cameraId = await getWideAngleCameraId();
+    const videoConstraints = cameraId
+      ? { deviceId: { exact: cameraId } }
+      : { facingMode: 'environment' };
+
     await _html5Scanner.start(
-      { facingMode: 'environment' },
+      videoConstraints,
       { fps: 15, qrbox: { width: 280, height: 100 }, aspectRatio: 1.0, formatsToSupport: [5, 7, 8, 13] },
       async (decodedText) => {
         setScanStatus('✓ Code détecté !', 'var(--green)');
