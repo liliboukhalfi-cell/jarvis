@@ -4617,6 +4617,11 @@ async function getWideAngleCameraId() {
 
     if (cameras.length === 0) return null;
 
+    // Log les caméras disponibles pour debug
+    const cameraLabels = cameras.map((c, i) => `${i}: "${c.label || 'sans label'}"`).join(' | ');
+    console.log('Caméras:', cameraLabels);
+    setScanStatus('Caméras: ' + cameraLabels, '#FFD54F');
+
     // Priorité 1: Chercher ultra grand angle
     for (let cam of cameras) {
       const label = cam.label.toLowerCase();
