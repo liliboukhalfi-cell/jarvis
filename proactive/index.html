@@ -4606,16 +4606,32 @@ async function getWideAngleCameraId() {
 
     if (cameras.length === 0) return null;
 
-    // Chercher la caméra grand angle (ultra-wide, 0.5x, etc.)
+    // Priorité 1: Chercher ultra grand angle
     for (let cam of cameras) {
       const label = cam.label.toLowerCase();
-      if (label.includes('ultra') || label.includes('0.5') || label.includes('wide')) {
+      if (label.includes('ultra') || label.includes('0.5x') || label.includes('ultrawide') || label.includes('ultra-wide')) {
         return cam.deviceId;
       }
     }
 
-    // Si pas trouvée, utiliser la dernière (souvent le grand angle sur les téléphones)
-    return cameras.length > 1 ? cameras[cameras.length - 1].deviceId : cameras[0].deviceId;
+    // Priorité 2: Grand angle (wide)
+    for (let cam of cameras) {
+      const label = cam.label.toLowerCase();
+      if (label.includes('wide') && !label.includes('tele') && !label.includes('zoom')) {
+        return cam.deviceId;
+      }
+    }
+
+    // Priorité 3: Chercher par numéro (0.5, 1mm, etc.)
+    for (let cam of cameras) {
+      const label = cam.label.toLowerCase();
+      if (label.includes('0.5') || label.includes('1mm') || label.includes('24mm')) {
+        return cam.deviceId;
+      }
+    }
+
+    // Si rien trouvé, utiliser la première (généralement le grand angle sur téléphone)
+    return cameras[0].deviceId;
   } catch(e) {
     return null;
   }
